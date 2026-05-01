@@ -65,6 +65,15 @@ export const SHAPES = [
     ),
     value: "text",
   },
+  {
+    icon: (
+      // fa-eraser
+      <svg viewBox="0 0 448 512">
+        <path d="M384 128H127.25L16 239.25V384c0 17.67 14.33 32 32 32h128l96-96 112-112V160c0-17.67-14.33-32-32-32zm32 0v36.75L304 276.75 239.25 212 347.25 104H384c17.67 0 32 14.33 32 32zM128 448H48c-17.67 0-32-14.33-32-32V304l96-96 112 112-96 128z" />
+      </svg>
+    ),
+    value: "eraser",
+  },
 ] as const;
 
 export const shapesShortcutKeys = SHAPES.map((shape, index) => [

@@ -12,4 +12,7 @@ export const POINTER_BUTTON = {
   WHEEL: 1,
   SECONDARY: 2,
   TOUCH: -1,
+  // Кнопки стилуса (для ASUS ROG Flow Z13 и других устройств с поддержкой Pointer Events)
+  ERASER: 5,
+  PAN: 12,
 };
