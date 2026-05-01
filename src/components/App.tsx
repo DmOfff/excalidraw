@@ -818,11 +818,12 @@ export class App extends React.Component<any, AppState> {
 
     this.setState({ lastPointerDownWith: event.pointerType });
 
-    // pan canvas on wheel button drag or space+drag
+    // pan canvas on wheel button drag, space+drag, or stylus PAN button
     if (
       gesture.pointers.size === 0 &&
       (event.button === POINTER_BUTTON.WHEEL ||
-        (event.button === POINTER_BUTTON.MAIN && isHoldingSpace))
+        (event.button === POINTER_BUTTON.MAIN && isHoldingSpace) ||
+        event.button === POINTER_BUTTON.PAN)
     ) {
       isPanning = true;
       document.documentElement.style.cursor = CURSOR_TYPE.GRABBING;
@@ -857,6 +858,28 @@ export class App extends React.Component<any, AppState> {
         passive: true,
       });
       window.addEventListener("pointerup", teardown);
+      return;
+    }
+
+    // eraser button - delete elements under cursor
+    if (event.button === POINTER_BUTTON.ERASER) {
+      const { x, y } = viewportCoordsToSceneCoords(
+        event,
+        this.state,
+        this.canvas,
+      );
+      const hitElement = getElementAtPosition(
+        elements,
+        this.state,
+        x,
+        y,
+        this.state.zoom,
+      );
+      if (hitElement) {
+        elements = elements.filter(el => el.id !== hitElement.id);
+        history.resumeRecording();
+        this.setState({});
+      }
       return;
     }
 
@@ -960,6 +983,15 @@ export class App extends React.Component<any, AppState> {
     const originX = x;
     const originY = y;
 
+    // Поддержка силы нажатия для стилуса (pressure sensitivity)
+    // event.pressure возвращает значение от 0 до 1, где 0 - минимальное давление, 1 - максимальное
+    // Умножаем на 10 чтобы получить диапазон толщины линии от 0.5 до 10
+    const baseStrokeWidth = this.state.currentItemStrokeWidth;
+    const pressure = (event as any).pressure || 0.5;
+    const dynamicStrokeWidth = event.pointerType === 'pen' 
+      ? Math.max(0.5, Math.min(10, baseStrokeWidth * pressure * 2))
+      : baseStrokeWidth;
+
     let element = newElement(
       this.state.elementType,
       x,
@@ -967,7 +999,7 @@ export class App extends React.Component<any, AppState> {
       this.state.currentItemStrokeColor,
       this.state.currentItemBackgroundColor,
       this.state.currentItemFillStyle,
-      this.state.currentItemStrokeWidth,
+      dynamicStrokeWidth,
       this.state.currentItemRoughness,
       this.state.currentItemOpacity,
     );
@@ -1555,6 +1587,16 @@ export class App extends React.Component<any, AppState> {
         this.state,
         this.canvas,
       );
+
+      // Обновление толщины линии в реальном времени на основе силы нажатия
+      if (draggingElement && event.pointerType === 'pen') {
+        const pressure = (event as any).pressure || 0.5;
+        const baseStrokeWidth = this.state.currentItemStrokeWidth;
+        const dynamicStrokeWidth = Math.max(0.5, Math.min(10, baseStrokeWidth * pressure * 2));
+        mutateElement(draggingElement, {
+          strokeWidth: dynamicStrokeWidth,
+        });
+      }
 
       let width = distance(originX, x);
       let height = distance(originY, y);
